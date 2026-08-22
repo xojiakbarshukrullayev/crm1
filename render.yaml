@@ -16,10 +16,15 @@ services:
         fromDatabase:
           name: manga-crm-db
           property: connectionString
-    healthCheckPath: /admin/
+      - key: ADMIN_PASSWORD
+        generateValue: true
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+    healthCheckPath: /admin/login/
     autoDeploy: true
 
 databases:
   - name: manga-crm-db
     plan: free
     databaseName: manga_crm
+    user: manga_crm

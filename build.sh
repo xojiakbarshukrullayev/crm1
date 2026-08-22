@@ -1,63 +1,48 @@
 #!/bin/bash
-
-# Exit on error
+# Manga CRM - Render build script
 set -e
 
 echo "=========================================="
-echo "  MANGA CRM - Build Script"
+echo "  MANGA CRM - Render Build"
 echo "=========================================="
 
-# Install Python dependencies
+# Python deps
 echo "[1/5] Installing Python dependencies..."
+pip install --upgrade pip
 pip install -r backend/requirements.txt
 
-# Install Node.js dependencies and build frontend
+# Frontend build
 echo "[2/5] Installing Node.js dependencies..."
 cd frontend
-npm install
-
+npm ci || npm install
 echo "[3/5] Building React frontend..."
 npm run build
 
+# Frontend dist -> Django frontend_build
 echo "[4/5] Copying frontend build to Django..."
 mkdir -p ../backend/frontend_build
 cp -r dist/* ../backend/frontend_build/
 cd ..
 
-# Run Django migrations
+# Django migrate + collectstatic
 echo "[5/5] Running Django migrations..."
 cd backend
 python manage.py migrate --noinput
-
-# Collect static files
-echo "Collecting static files..."
 python manage.py collectstatic --noinput
 
-# Create superuser if not exists
-python -c "
+# Superuser yaratish (agar mavjud bo'lmasa)
+python <<'PY'
 import os, django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'manga_crm.settings')
 django.setup()
 from accounts.models import User
 if not User.objects.filter(username='admin').exists():
-    User.objects.create_superuser('admin', 'admin@manga.uz', 'admin123', role='admin')
-    print('Superuser created: admin / admin123')
+    pw = os.environ.get('ADMIN_PASSWORD', 'admin123')
+    User.objects.create_superuser('admin', 'admin@manga.uz', pw, role='admin')
+    print(f"Superuser yaratildi: admin / {pw}")
 else:
-    print('Superuser already exists')
-"
-
-# Seed test data
-python -c "
-import os, django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'manga_crm.settings')
-django.setup()
-from accounts.models import User
-if User.objects.count() <= 1:
-    exec(open('../seed_data.py').read().replace('import os', 'pass # import os'))
-    print('Test data seeded')
-else:
-    print('Data already exists, skipping seed')
-" || echo "Seed skipped"
+    print('Superuser allaqachon mavjud')
+PY
 
 echo "=========================================="
 echo "  Build complete!"

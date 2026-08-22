@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 from datetime import timedelta
 from dotenv import load_dotenv
+import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -10,9 +11,16 @@ load_dotenv(BASE_DIR.parent / '.env')
 
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-dev-only-key')
 
-DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() in ('true', '1', 'yes')
+DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() in ('true', '1', 'yes')
 
-ALLOWED_HOSTS = ['*']
+# Render domenini va qo'shimcha hostlarni qabul qilish
+_extra_hosts = os.environ.get('DJANGO_ALLOWED_HOSTS', '')
+ALLOWED_HOSTS = ['*'] if DEBUG else [
+    h.strip() for h in (
+        ['.onrender.com', 'localhost', '127.0.0.1'] +
+        ([_extra_hosts] if _extra_hosts else [])
+    ) if h.strip()
+]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -68,25 +76,14 @@ TEMPLATES = [
 WSGI_APPLICATION = 'manga_crm.wsgi.application'
 
 # Database - PostgreSQL on Render, SQLite locally
-DATABASE_URL = os.environ.get('DATABASE_URL')
-if DATABASE_URL:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': DATABASE_URL.split('/')[-1].split('?')[0],
-            'USER': DATABASE_URL.split('://')[1].split(':')[0] if '://' in DATABASE_URL else '',
-            'PASSWORD': DATABASE_URL.split(':')[1].split('@')[0] if ':' in DATABASE_URL else '',
-            'HOST': DATABASE_URL.split('@')[1].split(':')[0] if '@' in DATABASE_URL else '',
-            'PORT': DATABASE_URL.split(':')[-1].split('/')[0].split('?')[0] if ':' in DATABASE_URL else '5432',
-        }
-    }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
+# Render DATABASE_URL ni dj-database-url orqali to'g'ri parse qilamiz
+DATABASES = {
+    'default': dj_database_url.config(
+        default=f'sqlite:///{BASE_DIR / "db.sqlite3"}',
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
+}
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -147,5 +144,19 @@ SIMPLE_JWT = {
 }
 
 # CORS
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOWED_ORIGINS = [
+    o.strip() for o in os.environ.get(
+        'CORS_ALLOWED_ORIGINS',
+        'http://localhost:5173,http://127.0.0.1:5173'
+    ).split(',') if o.strip()
+]
 CORS_ALLOW_CREDENTIALS = True
+
+# CSRF - frontend (SPA) uchun cookie-based auth'ga ruxsat
+CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS + ['https://*.onrender.com']
+
+# Xavfsizlik headerlari (HTTPS orqasida Render'ga kerak)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = not DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
