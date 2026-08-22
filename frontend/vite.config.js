@@ -3,6 +3,14 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
+  // Static assetlarni /assets/... URL ostida chiqarish (Django+WhiteNoise mos)
+  base: '/',
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    sourcemap: false,
+    emptyOutDir: true,
+  },
   server: {
     port: 5173,
     proxy: {

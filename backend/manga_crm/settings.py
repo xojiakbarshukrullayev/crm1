@@ -104,15 +104,20 @@ STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
 
+# Frontend build (React) ichidagi /assets papkasini static sifatida qo'shamiz
+# WhiteNoise bu yerda serve qiladi (MIDDLEWARE orqali)
 if (BASE_DIR / 'frontend_build' / 'assets').exists():
     STATICFILES_DIRS.append(BASE_DIR / 'frontend_build' / 'assets')
 
-# Render'da CompressedManifestStaticFilesStorage xato berishi mumkin (hash mos kelmasa)
-# WhiteNoise'ning o'z storage'i yetarli va barqarorroq
+# WhiteNoise'ning oddiy CompressedStaticFilesStorage (manifest xatosiz)
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# WHITENOISE additional - frontend/index.html ni ham root/ sifatida serve qiladi
+WHITENOISE_USE_FINDERS = True
+WHITENOISE_MANIFEST_STRICT = False
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
