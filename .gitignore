@@ -13,3 +13,4 @@ venv/
 .DS_Store
 staticfiles/
 media/
+token.env
