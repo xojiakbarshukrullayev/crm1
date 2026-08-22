@@ -107,7 +107,9 @@ STATICFILES_DIRS = [
 if (BASE_DIR / 'frontend_build' / 'assets').exists():
     STATICFILES_DIRS.append(BASE_DIR / 'frontend_build' / 'assets')
 
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage' if not DEBUG else 'django.contrib.staticfiles.storage.StaticFilesStorage'
+# Render'da CompressedManifestStaticFilesStorage xato berishi mumkin (hash mos kelmasa)
+# WhiteNoise'ning o'z storage'i yetarli va barqarorroq
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
